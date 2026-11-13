@@ -62,8 +62,8 @@ Requires a self-hosted [DocuSeal](https://www.docuseal.com) Enterprise instance 
 	<category>integration</category>
 	<category>office</category>
 	<website>https://raveng.it</website>
-	<bugs>https://github.com/Reidel-Law-Firm/docuseal_nc_app/issues</bugs>
-    <repository type="git">https://github.com/Reidel-Law-Firm/docuseal_nc_app</repository>
+	<bugs>https://github.com/Reidel-Law-Firm/docuseal-nc-app/issues</bugs>
+    <repository type="git">https://github.com/Reidel-Law-Firm/docuseal-nc-app</repository>
 	<dependencies>
 		<nextcloud min-version="30" max-version="34"/>
 		<php min-version="8.1"/>
