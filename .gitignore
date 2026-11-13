@@ -1,0 +1,36 @@
+# Dependencies
+/node_modules/
+/vendor/
+
+# Build output
+/build/
+*.js.map
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+composer.lock
+
+# NPM
+package-lock.json
+
+# Coverage
+/coverage/
+/clover.xml
+/.phpunit.result.cache
+
+# Psalm
+/psalm-baseline.xml
+
+# Local dev environment
+docker-compose.yml
+setup-app.ps1
