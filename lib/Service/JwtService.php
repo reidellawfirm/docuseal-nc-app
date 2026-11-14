@@ -110,7 +110,7 @@ class JwtService {
 		return $this->appConfig->getValueString(
 			Application::APP_ID,
 			'docuseal_user_email',
-			'c.tenca@ce4u.it'
+			''
 		);
 	}
 
