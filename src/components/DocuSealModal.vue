@@ -367,7 +367,10 @@ export default {
 				const serverUrl = response.data.serverUrl
 				this.builderHost = serverUrl.replace(/^https?:\/\//, '')
 			} catch (e) {
-				showError(t('docuseal_nc_app', 'Errore nel caricamento dell\'editor'))
+				const serverError = e.response?.data?.error
+				showError(typeof serverError === 'string' && serverError !== ''
+					? serverError
+					: t('docuseal_nc_app', 'Errore nel caricamento dell\'editor'))
 				console.error('Builder token error:', e)
 				this.step = this.configuredTemplateId ? 'ready' : 'config'
 			}

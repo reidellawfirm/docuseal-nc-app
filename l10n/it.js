@@ -133,6 +133,8 @@ OC.L10N.register(
     "Signature" : "Firma",
     "Signature request" : "Richiesta di firma",
     "Trascina e posiziona firma, data, testo e altri campi sul documento" : "Trascina e posiziona firma, data, testo e altri campi sul documento",
+    "DocuSeal account email" : "Email dell'account DocuSeal",
+    "Email of the DocuSeal account that owns the API key. Required to configure signature fields." : "Email dell'account DocuSeal proprietario della chiave API. Necessaria per configurare i campi firma.",
     "https://docuseal.example.com" : "https://docuseal.example.com"
 },
 "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

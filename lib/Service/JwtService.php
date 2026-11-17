@@ -31,18 +31,31 @@ class JwtService {
 			throw new \Exception('DocuSeal API key not configured');
 		}
 
+		$docuSealUserEmail = $this->getDocuSealUserEmail();
+		if ($docuSealUserEmail === '') {
+			throw new \Exception('DocuSeal account email is not configured. Open Settings > Connected accounts > DocuSeal and enter the email of the DocuSeal account that owns the API key.');
+		}
+		if (!filter_var($docuSealUserEmail, FILTER_VALIDATE_EMAIL)) {
+			throw new \Exception('The configured DocuSeal account email is not a valid email address. Please correct it in the DocuSeal integration settings.');
+		}
+
 		$header = [
 			'alg' => 'HS256',
 			'typ' => 'JWT',
 		];
 
 		$payload = [
-			'user_email' => $this->getDocuSealUserEmail(),
-			'integration_email' => $userEmail,
+			'user_email' => $docuSealUserEmail,
 			'name' => $templateName,
 			'iat' => time(),
 			'exp' => time() + 3600,
 		];
+
+		// integration_email is optional in the DocuSeal builder API; omit it
+		// when the Nextcloud account has no email instead of sending ''.
+		if ($userEmail !== '') {
+			$payload['integration_email'] = $userEmail;
+		}
 
 		if ($templateId !== null) {
 			$payload['template_id'] = $templateId;
@@ -107,11 +120,11 @@ class JwtService {
 	 * Get the DocuSeal admin user email (for builder token)
 	 */
 	private function getDocuSealUserEmail(): string {
-		return $this->appConfig->getValueString(
+		return trim($this->appConfig->getValueString(
 			Application::APP_ID,
 			'docuseal_user_email',
 			''
-		);
+		));
 	}
 
 	private function base64UrlEncode(string $data): string {

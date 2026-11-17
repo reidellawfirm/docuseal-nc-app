@@ -28,6 +28,7 @@ class Admin implements ISettings {
 			'server_url' => $serverUrl,
 			'api_key_set' => $apiKeySet,
 			'webhook_secret_set' => $webhookSecretSet,
+			'docuseal_user_email' => $this->appConfig->getValueString(Application::APP_ID, 'docuseal_user_email', ''),
 		]);
 
 		return new TemplateResponse(Application::APP_ID, 'adminSettings');

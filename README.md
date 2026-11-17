@@ -49,7 +49,7 @@ Language is selected automatically based on the user's Nextcloud settings.
 
 | Component | Version |
 |---|---|
-| Nextcloud | 28 - 34 |
+| Nextcloud | 34 - 35 |
 | PHP | 8.1+ |
 | DocuSeal Enterprise | Self-hosted |
 | Node.js | 20+ (build only) |
@@ -84,7 +84,8 @@ sudo -u www-data php occ app:enable docuseal_nc_app
 1. Go to **Settings -> Connected accounts -> DocuSeal**
 2. Enter your DocuSeal server URL (e.g. `https://docuseal.example.com`)
 3. Enter the API Key (found in DocuSeal: Settings -> API)
-4. Click **Save** - the connection is tested automatically
+4. Enter the **DocuSeal account email** — the email of the DocuSeal account that owns that API key. This is required by DocuSeal's embedded field builder and is not the recipient's email address.
+5. Click **Save** - the connection is tested automatically
 
 ### 5. Configure Webhook (optional but recommended)
 

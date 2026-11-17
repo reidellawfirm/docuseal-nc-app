@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.13
+
+### Fixed
+- Fixed DocuSeal's embedded field builder rejecting every token with
+  `'' doesn't exist. Please use your account user email address for user_email.`
+  The app now exposes and saves the required DocuSeal API-key owner email in
+  Settings > Connected accounts > DocuSeal.
+- Validate the DocuSeal account email before generating a builder token and
+  display actionable configuration errors in the signing dialog.
+- Omit the optional `integration_email` JWT claim when the Nextcloud account
+  has no email address instead of sending an empty value or a localhost alias.
+
 ## 1.1.12
 
 ### Fixed

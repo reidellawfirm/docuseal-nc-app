@@ -50,12 +50,13 @@ Available in **English**, **Italian**, **German**, **French**, and **Spanish**.
 1. Install and enable the app
 2. Go to **Settings → Connected accounts → DocuSeal**
 3. Enter your DocuSeal server URL and API key
-4. Optionally configure the webhook URL displayed in the settings panel
-5. Right-click any PDF or DOCX in the Files app and select **Request signature with DocuSeal**
+4. Enter the email of the DocuSeal account that owns the API key (required for the field builder)
+5. Optionally configure the webhook URL displayed in the settings panel
+6. Right-click any PDF or DOCX in the Files app and select **Request signature with DocuSeal**
 
-Requires a self-hosted [DocuSeal](https://www.docuseal.com) Enterprise instance (Nextcloud 30–34, PHP 8.1+).
+Requires a self-hosted [DocuSeal](https://www.docuseal.com) Enterprise instance (Nextcloud 34–35, PHP 8.1+).
 	]]></description>
-	<version>1.1.12</version>
+	<version>1.1.13</version>
 	<licence>AGPL-3.0-or-later</licence>
     <author mail="admin@ce4u.it">GEST CE</author>
     <author mail="schuyler@reidellawfirm.com">Schuyler "Rocky" Reidel, Reidel Law Firm (modifications)</author>

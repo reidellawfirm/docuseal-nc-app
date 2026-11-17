@@ -36,6 +36,22 @@
 		</div>
 
 		<div class="field">
+			<label for="docuseal-user-email">
+				{{ t('docuseal_nc_app', 'DocuSeal account email') }}
+			</label>
+			<input
+				id="docuseal-user-email"
+				v-model="state.docuseal_user_email"
+				type="email"
+				placeholder="admin@example.com"
+				autocomplete="email"
+				@input="onInput">
+			<p class="hint">
+				{{ t('docuseal_nc_app', 'Email of the DocuSeal account that owns the API key. Required to configure signature fields.') }}
+			</p>
+		</div>
+
+		<div class="field">
 			<label for="docuseal-webhook-secret">
 				{{ t('docuseal_nc_app', 'Webhook Secret (opzionale)') }}
 			</label>
@@ -161,6 +177,7 @@ export default {
 			try {
 				const params = {
 					server_url: this.state.server_url,
+					docuseal_user_email: this.state.docuseal_user_email || '',
 				}
 				if (this.apiKey !== '') {
 					params.api_key = this.apiKey
@@ -186,7 +203,10 @@ export default {
 					showSuccess(t('docuseal_nc_app', 'Configurazione salvata'))
 				}
 			} catch (e) {
-				showError(t('docuseal_nc_app', 'Errore nel salvataggio della configurazione'))
+				const serverError = e.response?.data?.error
+				showError(typeof serverError === 'string' && serverError !== ''
+					? serverError
+					: t('docuseal_nc_app', 'Errore nel salvataggio della configurazione'))
 				console.error(e)
 			}
 			this.saving = false
@@ -199,7 +219,7 @@ export default {
 			try {
 				const url = generateUrl('/apps/docuseal_nc_app/config')
 				await axios.delete(url)
-				this.state = { server_url: '', api_key_set: false, webhook_secret_set: false }
+				this.state = { server_url: '', api_key_set: false, webhook_secret_set: false, docuseal_user_email: '' }
 				this.connectionStatus = null
 				showSuccess(t('docuseal_nc_app', 'DocuSeal disconnesso'))
 			} catch (e) {

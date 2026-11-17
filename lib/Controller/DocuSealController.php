@@ -97,7 +97,7 @@ class DocuSealController extends Controller {
 			);
 
 			$token = $this->jwtService->generateBuilderToken(
-				$userInfo['email'] ?? $this->userId . '@localhost',
+				$userInfo['email'] ?? '',
 				pathinfo($file->getName(), PATHINFO_FILENAME),
 				[$downloadUrl],
 				$existingTemplateId ? (int)$existingTemplateId : null,
