@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.12
+
+### Fixed
+- Fixed FileAction silent failure: the DocuSealModal dynamic import failed
+  with a ChunkLoadError because the webpack `publicPath` was hardcoded to
+  `/apps/<app_id>/js/` with Windows backslashes. When the app is installed in
+  `custom_apps/`, every on-demand chunk (modal + vendor) 404'd and the click
+  appeared to do nothing. Set `publicPath: 'auto'` so webpack derives the
+  base from the script's own URL (the crmhub_nc_app precedent).
+- Added a `.catch()` on the lazy `DocuSealModal` import so any future chunk
+  load failure surfaces a visible error toast instead of a dead click.
+
 ## 1.1.11
 - Support limited to Nextcloud 34 and 35 (the two most recent stable major versions).
 - Declared compatibility narrowed accordingly.

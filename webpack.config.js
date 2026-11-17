@@ -17,4 +17,15 @@ webpackConfig.module.rules.push({
 	resolve: { fullySpecified: false },
 })
 
+// The NC webpack-vue-config hardcodes publicPath to '/apps/{appName}/js/' and,
+// when built on Windows, even serializes it with backslashes. Both break
+// dynamic chunk loading (the DocuSealModal lazy import) when the app is
+// installed in custom_apps/ instead of apps/.
+// Setting 'auto' makes webpack compute the base URL at runtime from the
+// <script> src attribute that Nextcloud generates, which already points at
+// the correct path (/apps/ or /custom_apps/), with forward slashes.
+webpackConfig.output = Object.assign({}, webpackConfig.output, {
+	publicPath: 'auto',
+})
+
 module.exports = webpackConfig

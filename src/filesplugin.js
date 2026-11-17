@@ -2,6 +2,7 @@ import { registerFileAction, Permission } from '@nextcloud/files'
 import { generateUrl } from '@nextcloud/router'
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { createApp } from 'vue'
 
 let modalApp = null
@@ -93,7 +94,12 @@ const docuSealAction = {
 			}
 			return null
 		}
-		showSignModal(node)
+		try {
+			await showSignModal(node)
+		} catch (error) {
+			console.error('DocuSeal signing dialog could not be opened:', error)
+			showError(t('docuseal_nc_app', 'Unable to open the DocuSeal signing dialog. Please reload the page and contact your administrator if the problem persists.'))
+		}
 		return null
 	},
 	order: 90,
