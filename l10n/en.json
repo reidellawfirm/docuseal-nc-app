@@ -134,7 +134,14 @@
         "Trascina e posiziona firma, data, testo e altri campi sul documento": "Drag and place signature, date, text and other fields onto the document",
         "DocuSeal account email": "DocuSeal account email",
         "Email of the DocuSeal account that owns the API key. Required to configure signature fields.": "Email of the DocuSeal account that owns the API key. Required to configure signature fields.",
-        "https://docuseal.example.com": "https://docuseal.example.com"
+        "https://docuseal.example.com": "https://docuseal.example.com",
+        "Unable to open the DocuSeal signing dialog. Please reload the page and contact your administrator if the problem persists.": "Unable to open the DocuSeal signing dialog. Please reload the page and contact your administrator if the problem persists.",
+        "You requested a signature for \"%s\"": "You requested a signature for \"%s\"",
+        "%s signed \"%s\"": "%s signed \"%s\"",
+        "All signatures completed for \"%s\"": "All signatures completed for \"%s\"",
+        "Signature request cancelled for \"%s\"": "Signature request cancelled for \"%s\"",
+        "%s declined to sign \"%s\"": "%s declined to sign \"%s\"",
+        "%s declined to sign \"%s\" - Reason: %s": "%s declined to sign \"%s\" - Reason: %s"
     },
     "plurals": {}
 }

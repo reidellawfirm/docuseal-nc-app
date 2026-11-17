@@ -20,7 +20,7 @@
 						v-if="builderToken"
 						:token="builderToken"
 						:host="builderHost"
-						:language="'it'"
+						:language="docuSealLanguage"
 						:with-send-button="false"
 						:with-sign-yourself-button="false"
 						:with-recipients-button="false"
@@ -223,7 +223,8 @@ import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwit
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import { DocusealBuilder } from '@docuseal/vue'
 import { generateUrl } from '@nextcloud/router'
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t } from '../utils/translate'
+import { getDocuSealLanguage } from '../utils/language'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import MultiselectWho from './MultiselectWho.vue'
@@ -313,6 +314,9 @@ export default {
 	},
 
 	computed: {
+		docuSealLanguage() {
+			return getDocuSealLanguage()
+		},
 		canSubmit() {
 			// Embed signing auto-adds current user, so no recipients needed
 			if (this.recipients.length === 0 && !this.showEmbedOption) {

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.1.14
+
+### Fixed
+- The embedded DocuSeal field builder now follows the Nextcloud user's
+  language instead of always displaying Italian. Regional variants fall back
+  to their supported base language, with English as the safe default.
+- Missing or unsupported frontend translations now use the English catalog
+  rather than exposing Italian source strings.
+- Completed the English, Italian, German, French, and Spanish catalogs for
+  every translatable application string. Previously, German, French, and
+  Spanish each covered only 61 of 130 source strings, causing missing labels
+  to fall back to Italian.
+- Added a missing translation for the signing-dialog loading error and a
+  complete catalog audit that checks generated locale bundles and the
+  DocuSeal language-selection mapping.
+- Activity messages now use the recipient language supplied by Nextcloud
+  instead of the request context's language; decline reasons are translated
+  as part of the complete notification message.
+
 ## 1.1.13
 
 ### Fixed

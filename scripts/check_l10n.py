@@ -1,21 +1,40 @@
-import json, re, glob
+#!/usr/bin/env python3
+"""Check every advertised DocuSeal translation catalog against source keys."""
+
+import glob
+import json
+import re
+import sys
+from pathlib import Path
+
 keys = set()
-pat_js = re.compile(r"t\('docuseal_nc_app',\s*'((?:[^'\\]|\\.)+)'")
-pat_php = re.compile(r"->t\('((?:[^'\\]|\\.)+)'")
-for f in glob.glob('src/**/*.vue', recursive=True) + glob.glob('src/**/*.js', recursive=True):
-    s = open(f, encoding='utf-8').read()
-    for m in pat_js.finditer(s):
-        keys.add(m.group(1).replace("\\'", "'"))
-for f in glob.glob('lib/**/*.php', recursive=True):
-    s = open(f, encoding='utf-8').read()
-    for m in pat_php.finditer(s):
-        keys.add(m.group(1).replace("\\'", "'"))
-en = json.load(open('l10n/en.json', encoding='utf-8'))['translations']
-it = json.load(open('l10n/it.json', encoding='utf-8'))['translations']
-miss_en = sorted(k for k in keys if k not in en)
-miss_it = sorted(k for k in keys if k not in it)
+patterns = [
+    (re.compile(r"t\('docuseal_nc_app',\s*'((?:[^'\\]|\\.)+)'"),
+     ['src/**/*.vue', 'src/**/*.js']),
+    (re.compile(r"->t\('((?:[^'\\]|\\.)+)'"), ['lib/**/*.php']),
+]
+for pattern, paths in patterns:
+    for source_glob in paths:
+        for filename in glob.glob(source_glob, recursive=True):
+            source = Path(filename).read_text(encoding='utf-8')
+            keys.update(value.replace("\\'", "'") for value in pattern.findall(source))
+
 print('TOTAL SOURCE KEYS:', len(keys))
-print('MISSING IN en.json:', len(miss_en))
-for k in miss_en: print('  EN:', repr(k))
-print('MISSING IN it.json:', len(miss_it))
-for k in miss_it: print('  IT:', repr(k))
+failed = False
+for filename in sorted(glob.glob('l10n/*.json')):
+    catalog = json.loads(Path(filename).read_text(encoding='utf-8'))['translations']
+    missing = sorted(keys - set(catalog))
+    empty = sorted(key for key in keys if key in catalog and not str(catalog[key]).strip())
+    generated = Path(filename).with_suffix('.js')
+    print(f'{filename}: {len(catalog)} entries; {len(missing)} missing; {len(empty)} empty')
+    for key in missing:
+        print('  MISSING:', repr(key))
+    for key in empty:
+        print('  EMPTY:', repr(key))
+    if not generated.is_file():
+        print('  GENERATED BUNDLE MISSING:', generated)
+        failed = True
+    if missing or empty:
+        failed = True
+
+sys.exit(1 if failed else 0)

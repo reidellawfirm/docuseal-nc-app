@@ -1,6 +1,6 @@
 import { registerFileAction, Permission } from '@nextcloud/files'
 import { generateUrl } from '@nextcloud/router'
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t } from './utils/translate'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import { createApp } from 'vue'

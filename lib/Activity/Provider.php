@@ -7,13 +7,13 @@ namespace OCA\DocuSeal\Activity;
 use OCA\DocuSeal\AppInfo\Application;
 use OCP\Activity\IEvent;
 use OCP\Activity\IProvider as IActivityProvider;
-use OCP\IL10N;
+use OCP\L10N\IFactory;
 use OCP\IURLGenerator;
 
 class Provider implements IActivityProvider {
 
 	public function __construct(
-		private IL10N $l10n,
+		private IFactory $l10nFactory,
 		private IURLGenerator $urlGenerator,
 	) {
 	}
@@ -23,8 +23,9 @@ class Provider implements IActivityProvider {
 			throw new \InvalidArgumentException();
 		}
 
+		$l = $this->l10nFactory->get(Application::APP_ID, $language);
 		$params = $event->getSubjectParameters();
-		$fileName = $params['fileName'] ?? 'documento';
+		$fileName = $params['fileName'] ?? 'document';
 		$signerName = $params['signerName'] ?? $params['signerEmail'] ?? '';
 
 		$event->setIcon(
@@ -36,27 +37,27 @@ class Provider implements IActivityProvider {
 		switch ($event->getSubject()) {
 			case 'signature_requested':
 				$event->setParsedSubject(
-					$this->l10n->t('Hai richiesto la firma per "%s"', [$fileName])
+					$l->t('You requested a signature for "%s"', [$fileName])
 				);
 				break;
 			case 'signature_completed':
 				$event->setParsedSubject(
-					$this->l10n->t('%s ha firmato "%s"', [$signerName, $fileName])
+					$l->t('%s signed "%s"', [$signerName, $fileName])
 				);
 				break;
 			case 'signature_declined':
 				$event->setParsedSubject(
-					$this->l10n->t('%s ha rifiutato di firmare "%s"', [$signerName, $fileName])
+					$l->t('%s declined to sign "%s"', [$signerName, $fileName])
 				);
 				break;
 			case 'all_signatures_completed':
 				$event->setParsedSubject(
-					$this->l10n->t('Tutte le firme completate per "%s"', [$fileName])
+					$l->t('All signatures completed for "%s"', [$fileName])
 				);
 				break;
 			case 'signature_cancelled':
 				$event->setParsedSubject(
-					$this->l10n->t('Richiesta di firma annullata per "%s"', [$fileName])
+					$l->t('Signature request cancelled for "%s"', [$fileName])
 				);
 				break;
 			default:

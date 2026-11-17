@@ -68,9 +68,10 @@ class Notifier implements INotifier {
 			case 'signature_declined':
 				$signerName = $params['signerName'] ?? $params['signerEmail'] ?? 'Unknown';
 				$fileName = $params['fileName'] ?? 'document';
-				$reason = !empty($params['reason']) ? ' - Motivo: ' . $params['reason'] : '';
 				$notification->setParsedSubject(
-					$l->t('%s ha rifiutato di firmare "%s"%s', [$signerName, $fileName, $reason])
+					!empty($params['reason'])
+						? $l->t('%s declined to sign "%s" - Reason: %s', [$signerName, $fileName, $params['reason']])
+						: $l->t('%s ha rifiutato di firmare "%s"', [$signerName, $fileName])
 				);
 				$notification->setRichSubject(
 					$l->t('{signer} ha rifiutato di firmare {file}'),

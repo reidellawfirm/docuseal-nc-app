@@ -32,7 +32,7 @@ import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcAvatar from '@nextcloud/vue/components/NcAvatar'
 import axios from '@nextcloud/axios'
 import { generateOcsUrl } from '@nextcloud/router'
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t } from '../utils/translate'
 
 const EMAIL_REGEX = /^\w+([.+-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/
 

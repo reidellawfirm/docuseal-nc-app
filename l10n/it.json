@@ -134,7 +134,14 @@
         "Trascina e posiziona firma, data, testo e altri campi sul documento": "Trascina e posiziona firma, data, testo e altri campi sul documento",
         "DocuSeal account email": "Email dell'account DocuSeal",
         "Email of the DocuSeal account that owns the API key. Required to configure signature fields.": "Email dell'account DocuSeal proprietario della chiave API. Necessaria per configurare i campi firma.",
-        "https://docuseal.example.com": "https://docuseal.example.com"
+        "https://docuseal.example.com": "https://docuseal.example.com",
+        "Unable to open the DocuSeal signing dialog. Please reload the page and contact your administrator if the problem persists.": "Impossibile aprire la finestra di firma DocuSeal. Ricarica la pagina e contatta l'amministratore se il problema persiste.",
+        "You requested a signature for \"%s\"": "Hai richiesto la firma per \"%s\"",
+        "%s signed \"%s\"": "%s ha firmato \"%s\"",
+        "All signatures completed for \"%s\"": "Tutte le firme completate per \"%s\"",
+        "Signature request cancelled for \"%s\"": "Richiesta di firma annullata per \"%s\"",
+        "%s declined to sign \"%s\"": "%s ha rifiutato di firmare \"%s\"",
+        "%s declined to sign \"%s\" - Reason: %s": "%s ha rifiutato di firmare \"%s\" - Motivo: %s"
     },
     "plurals": {}
 }

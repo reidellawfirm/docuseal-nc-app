@@ -41,7 +41,7 @@ Full integration of **DocuSeal Enterprise** (self-hosted) with Nextcloud for ele
 ### Multi-language
 Full translations: **Italian**, **English**, **German**, **French**, **Spanish**
 
-Language is selected automatically based on the user's Nextcloud settings.
+The Nextcloud app and embedded DocuSeal field builder follow the user's Nextcloud language. English, Italian, German, French, and Spanish are included with complete application-string catalogs; supported regional variants use their base language and other languages fall back to English.
 
 ---
 

@@ -136,7 +136,7 @@
 import NcButton from '@nextcloud/vue/components/NcButton'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t } from '../utils/translate'
 import { loadState } from '@nextcloud/initial-state'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import DocuSealIcon from '../icons/DocuSealIcon.vue'
