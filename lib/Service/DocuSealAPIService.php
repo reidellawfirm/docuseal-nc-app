@@ -369,6 +369,8 @@ class DocuSealAPIService {
 			],
 			'timeout' => 120,
 			'verify' => $this->getVerifyOption(),
+			// Never forward the API key through a redirect to another origin.
+			'allow_redirects' => false,
 		]);
 		return (string)$response->getBody();
 	}

@@ -10,7 +10,7 @@ use OCA\DocuSeal\Db\SignatureRequest;
 use OCA\DocuSeal\Db\SignatureRequestMapper;
 use OCA\DocuSeal\Db\SignatureRequestSubmitterMapper;
 use OCA\DocuSeal\Service\DocuSealAPIService;
-use OCA\DocuSeal\Service\UtilsService;
+use OCA\DocuSeal\Service\SignedDocumentService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\Notification\IManager as INotificationManager;
@@ -21,9 +21,9 @@ class CheckSignatureStatus extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private DocuSealAPIService $docuSealAPIService,
+		private SignedDocumentService $signedDocumentService,
 		private SignatureRequestMapper $requestMapper,
 		private SignatureRequestSubmitterMapper $submitterMapper,
-		private UtilsService $utilsService,
 		private INotificationManager $notificationManager,
 		private LoggerInterface $logger,
 	) {
@@ -96,66 +96,31 @@ class CheckSignatureStatus extends TimedJob {
 			}
 		}
 
-		// Update request status
-		if ($remoteStatus !== $request->getStatus()) {
-			$oldStatus = $request->getStatus();
+		// A completed local status may be stale after a missed webhook. Always
+		// retry delivery from the authoritative remote submission, even when
+		// the local state is terminal, and only notify the worker that saves it.
+		$deliveredFileId = null;
+		if ($request->getSignedFileId() === null && $remoteStatus === 'completed') {
+			$deliveredFileId = $this->signedDocumentService->ensureSignedDocument($request, $submission);
+		}
+
+		// Do not regress a completed local request to an older remote state.
+		if ($remoteStatus !== $request->getStatus()
+			&& ($request->getStatus() !== 'completed' || $remoteStatus === 'completed')) {
 			$request->setStatus($remoteStatus);
 			$request->setUpdatedAt(time());
 			$this->requestMapper->update($request);
-
-			// If newly completed, download signed document
-			if ($remoteStatus === 'completed' && $oldStatus !== 'completed') {
-				$this->downloadSignedDocument($request, $submission);
-
-				$this->sendNotification(
-					$request->getUserId(),
-					'all_signatures_completed',
-					[
-						'requestId' => $request->getId(),
-						'fileName' => $request->getFileName(),
-					]
-				);
-			}
-		}
-	}
-
-	private function downloadSignedDocument(SignatureRequest $request, array $submission): void {
-		$documentUrl = $submission['combined_document_url'] ?? null;
-
-		if ($documentUrl === null && !empty($submission['documents'])) {
-			$documentUrl = $submission['documents'][0]['url'] ?? null;
 		}
 
-		if ($documentUrl === null && !empty($submission['submitters'])) {
-			foreach ($submission['submitters'] as $sub) {
-				if (!empty($sub['documents'])) {
-					$documentUrl = $sub['documents'][0]['url'] ?? null;
-					if ($documentUrl !== null) {
-						break;
-					}
-				}
-			}
-		}
-
-		if ($documentUrl === null) {
-			return;
-		}
-
-		try {
-			$content = $this->docuSealAPIService->downloadDocument($documentUrl);
-			$signedFileId = $this->utilsService->saveSignedDocument(
+		if ($deliveredFileId !== null) {
+			$this->sendNotification(
 				$request->getUserId(),
-				$content,
-				$request->getFilePath(),
-				$request->getFileName(),
+				'all_signatures_completed',
+				[
+					'requestId' => $request->getId(),
+					'fileName' => $request->getFileName(),
+				]
 			);
-			$request->setSignedFileId($signedFileId);
-			$request->setUpdatedAt(time());
-			$this->requestMapper->update($request);
-		} catch (Exception $e) {
-			$this->logger->error('Error downloading signed document: ' . $e->getMessage(), [
-				'app' => Application::APP_ID,
-			]);
 		}
 	}
 

@@ -21,7 +21,7 @@ Full integration of **DocuSeal Enterprise** (self-hosted) with Nextcloud for ele
 ### Tracking & Management
 - **Real-time status** - File sidebar with per-signer status and progress bar
 - **Nextcloud notifications** - Signed, declined, completed, expired
-- **Automatic download** - Signed PDF is saved automatically in the same folder
+- **Automatic download** - Completed signed PDF is saved automatically beside the original file with a submission-specific name; duplicate-safe delivery and recovery from missed webhooks or interrupted retries
 - **Audit trail** - Full timeline with PDF audit log download
 - **Send reminders** - Resend notification to signers who haven't signed yet
 - **Cancellation** - Cancel pending signature requests

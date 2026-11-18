@@ -9,7 +9,7 @@ use OCA\DocuSeal\AppInfo\Application;
 use OCA\DocuSeal\Db\SignatureRequestMapper;
 use OCA\DocuSeal\Db\SignatureRequestSubmitterMapper;
 use OCA\DocuSeal\Service\DocuSealAPIService;
-use OCA\DocuSeal\Service\UtilsService;
+use OCA\DocuSeal\Service\SignedDocumentService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -28,7 +28,7 @@ class WebhookController extends Controller {
 		private SignatureRequestMapper $requestMapper,
 		private SignatureRequestSubmitterMapper $submitterMapper,
 		private DocuSealAPIService $docuSealAPIService,
-		private UtilsService $utilsService,
+		private SignedDocumentService $signedDocumentService,
 		private INotificationManager $notificationManager,
 		private IAppConfig $appConfig,
 		private LoggerInterface $logger,
@@ -214,21 +214,23 @@ class WebhookController extends Controller {
 
 		try {
 			$request = $this->requestMapper->findBySubmissionId((int)$submissionId);
+			$hadSignedDocument = $request->getSignedFileId() !== null;
 			$request->setStatus('completed');
 			$request->setUpdatedAt(time());
 			$this->requestMapper->update($request);
 
-			// Download and save the signed document
-			$this->downloadSignedDocument($request, $data);
-
-			$this->sendNotification(
-				$request->getUserId(),
-				'all_signatures_completed',
-				[
-					'requestId' => $request->getId(),
-					'fileName' => $request->getFileName(),
-				]
-			);
+			// Announce delivery only after the file exists in Nextcloud.
+			$signedFileId = $this->signedDocumentService->ensureSignedDocument($request, $data);
+			if ($signedFileId !== null) {
+				$this->sendNotification(
+					$request->getUserId(),
+					'all_signatures_completed',
+					[
+						'requestId' => $request->getId(),
+						'fileName' => $request->getFileName(),
+					]
+				);
+			}
 		} catch (Exception $e) {
 			$this->logger->error('DocuSeal webhook: error handling submission.completed: ' . $e->getMessage(), [
 				'app' => Application::APP_ID,
@@ -289,74 +291,13 @@ class WebhookController extends Controller {
 			if ($request->getSubmissionId() !== null) {
 				try {
 					$submission = $this->docuSealAPIService->getSubmission($request->getSubmissionId());
-					$this->downloadSignedDocument($request, $submission);
+					$this->signedDocumentService->ensureSignedDocument($request, $submission);
 				} catch (Exception $e) {
 					$this->logger->error('Error downloading signed document: ' . $e->getMessage(), [
 						'app' => Application::APP_ID,
 					]);
 				}
 			}
-		}
-	}
-
-	/**
-	 * Download signed document and save to user's Nextcloud
-	 */
-	private function downloadSignedDocument($request, array $submissionData): void {
-		// Find the document URL
-		$documentUrl = null;
-
-		// Check combined_document_url first
-		if (!empty($submissionData['combined_document_url'])) {
-			$documentUrl = $submissionData['combined_document_url'];
-		}
-
-		// Fall back to documents array
-		if ($documentUrl === null && !empty($submissionData['documents'])) {
-			$documentUrl = $submissionData['documents'][0]['url'] ?? null;
-		}
-
-		// Check submitters' documents
-		if ($documentUrl === null && !empty($submissionData['submitters'])) {
-			foreach ($submissionData['submitters'] as $sub) {
-				if (!empty($sub['documents'])) {
-					$documentUrl = $sub['documents'][0]['url'] ?? null;
-					if ($documentUrl !== null) {
-						break;
-					}
-				}
-			}
-		}
-
-		if ($documentUrl === null) {
-			$this->logger->warning('No document URL found in submission data', [
-				'app' => Application::APP_ID,
-				'submissionId' => $request->getSubmissionId(),
-			]);
-			return;
-		}
-
-		try {
-			$content = $this->docuSealAPIService->downloadDocument($documentUrl);
-
-			$signedFileId = $this->utilsService->saveSignedDocument(
-				$request->getUserId(),
-				$content,
-				$request->getFilePath(),
-				$request->getFileName(),
-			);
-
-			$request->setSignedFileId($signedFileId);
-			$request->setUpdatedAt(time());
-			$this->requestMapper->update($request);
-
-			$this->logger->info('Signed document saved with file ID: ' . $signedFileId, [
-				'app' => Application::APP_ID,
-			]);
-		} catch (Exception $e) {
-			$this->logger->error('Error saving signed document: ' . $e->getMessage(), [
-				'app' => Application::APP_ID,
-			]);
 		}
 	}
 

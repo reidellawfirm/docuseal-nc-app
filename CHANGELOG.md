@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.16
+
+### Added
+- Automatically save each completed signed PDF in the original document's
+  current Nextcloud folder, named using the original basename and DocuSeal
+  submission ID (for example, `contract_signed_submission_123.pdf`).
+- Add an atomic per-request database delivery claim and a small migration for
+  its lease, preventing duplicate delivery from overlapping workers.
+- Add a 30-assertion regression harness for same-folder delivery, idempotency,
+  competing workers, retries, URL/PDF validation, and crash recovery.
+
+### Fixed
+- Resolve the original mount before creating the signed file instead of
+  silently saving to the user's root or an arbitrary shared mount.
+- Reconcile an exact PDF left behind by an interrupted earlier delivery,
+  without overwriting a file that contains different content.
+- Retry delivery for completed submissions whose signed copy is missing,
+  including stale terminal local states, with a safe retry lease.
+- Send completion notifications only for the worker that actually records the
+  signed document in Nextcloud.
+- Restrict credentialed signed-document downloads to the configured DocuSeal
+  origin, validate the PDF response, and disable credential redirects.
+
 ## 1.1.15
 
 ### Fixed
