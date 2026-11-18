@@ -204,11 +204,13 @@
 				<!-- Embed signing area -->
 				<div v-if="embedUrl" class="embed-section">
 					<h3>{{ t('docuseal_nc_app', 'Firma il documento') }}</h3>
-					<iframe
+					<DocusealForm
+						v-if="builderHost"
 						:src="embedUrl"
-						class="embed-frame"
-						frameborder="0"
-						allow="camera" />
+						:host="builderHost"
+						:language="docuSealLanguage"
+						class="embed-form"
+						@error="onSigningError" />
 				</div>
 			</div>
 		</div>
@@ -221,7 +223,7 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
-import { DocusealBuilder } from '@docuseal/vue'
+import { DocusealBuilder, DocusealForm } from '@docuseal/vue'
 import { generateUrl } from '@nextcloud/router'
 import { translate as t } from '../utils/translate'
 import { getDocuSealLanguage } from '../utils/language'
@@ -258,6 +260,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		DocusealBuilder,
+		DocusealForm,
 		MultiselectWho,
 		DocuSealIcon,
 		ArrowLeftIcon,
@@ -508,8 +511,9 @@ export default {
 			try {
 				const url = generateUrl('/apps/docuseal_nc_app/embed/{requestId}', { requestId })
 				const response = await axios.get(url)
-				if (response.data.embedSrc) {
+				if (response.data.embedSrc && response.data.serverUrl) {
 					this.embedUrl = response.data.embedSrc
+					this.builderHost = response.data.serverUrl.replace(/^https?:\/\//, '')
 				} else {
 					showError(t('docuseal_nc_app', 'Nessun URL di firma disponibile per il tuo utente'))
 					this.close()
@@ -519,6 +523,15 @@ export default {
 				showError(t('docuseal_nc_app', 'Impossibile aprire la firma embedded: ') + errorMsg)
 				this.close()
 			}
+		},
+
+		onSigningError(error) {
+			console.error('DocuSeal signing form error:', error)
+			const detail = error?.detail
+			const message = typeof detail === 'string'
+				? detail
+				: detail?.message || error?.message || ''
+			showError(t('docuseal_nc_app', 'Impossibile aprire la firma embedded: ') + message)
 		},
 	},
 }
@@ -833,9 +846,10 @@ h2 {
 	padding-top: 16px;
 }
 
-.embed-frame {
+.embed-form {
+	display: block;
 	width: 100%;
-	height: 600px;
+	min-height: 600px;
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 }

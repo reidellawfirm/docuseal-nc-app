@@ -14,7 +14,7 @@ Full integration of **DocuSeal Enterprise** (self-hosted) with Nextcloud for ele
 ### Document Signing
 - **Direct signing** - Right-click on PDF, DOCX or image -> send for signature
 - **Template-based signing** - Use pre-configured DocuSeal templates with field/role preview
-- **Embedded signing** - Signers can sign directly within Nextcloud (iframe)
+- **Embedded signing** - Signers can sign directly within Nextcloud using DocuSeal's supported signing-form component (no cross-origin iframe required)
 - **Email signing** - DocuSeal sends emails to signers with signing links
 - **Multiple recipients** - Nextcloud users (autocomplete) or external email addresses
 

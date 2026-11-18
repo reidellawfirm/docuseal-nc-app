@@ -1,6 +1,6 @@
 {
 	"name": "docuseal_nc_app",
-	"version": "1.1.14",
+	"version": "1.1.15",
 	"description": "DocuSeal integration for Nextcloud",
 	"private": true,
 	"scripts": {
@@ -10,7 +10,8 @@
 		"lint": "eslint --ext .js,.vue src",
 		"lint:fix": "eslint --ext .js,.vue --fix src",
 		"stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
-		"test:language": "node --test tests/js/language.test.mjs && python3 scripts/check_l10n.py"
+		"test:language": "node --test tests/js/language.test.mjs && python3 scripts/check_l10n.py",
+		"test:signing": "node --test tests/js/embedded-signing.test.mjs"
 	},
 	"dependencies": {
 		"@docuseal/vue": "^1.0.52",

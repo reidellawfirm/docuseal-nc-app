@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.15
+
+### Fixed
+- Fixed embedded signing showing `sign.reidellawfirm.com refused to connect`
+  by replacing the raw signing-page iframe with DocuSeal's supported
+  `<docuseal-form>` component. The raw `/s/{slug}` page sends
+  `X-Frame-Options: SAMEORIGIN`, which blocks cross-origin framing even
+  when Nextcloud's own Content Security Policy allows the DocuSeal host.
+- Pass the configured self-hosted DocuSeal host to the signing component so
+  its supported `/embed/forms` API loads signing data directly with CORS,
+  without weakening DocuSeal's response security headers.
+- Surface signing-component errors in the Nextcloud modal instead of leaving
+  the failed iframe as the only indication of failure.
+
 ## 1.1.14
 
 ### Fixed
