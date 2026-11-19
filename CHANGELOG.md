@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.18
+- Nextcloud App Store listing refreshed.
+- Screenshots added for the Nextcloud App Store listing.
+
 ## 1.1.17
 
 ### Fixed

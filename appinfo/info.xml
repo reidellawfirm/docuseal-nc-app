@@ -56,7 +56,7 @@ Available in **English**, **Italian**, **German**, **French**, and **Spanish**.
 
 Requires a self-hosted [DocuSeal](https://www.docuseal.com) Enterprise instance (Nextcloud 34–35, PHP 8.1+).
 	]]></description>
-	<version>1.1.17</version>
+	<version>1.1.18</version>
 	<licence>AGPL-3.0-or-later</licence>
     <author mail="admin@ce4u.it">GEST CE</author>
     <author mail="schuyler@reidellawfirm.com">Schuyler "Rocky" Reidel, Reidel Law Firm (modifications)</author>
@@ -66,7 +66,9 @@ Requires a self-hosted [DocuSeal](https://www.docuseal.com) Enterprise instance 
 	<website>https://github.com/reidellawfirm/docuseal-nc-app</website>
 	<bugs>https://github.com/reidellawfirm/docuseal-nc-app/issues</bugs>
     <repository type="git">https://github.com/reidellawfirm/docuseal-nc-app</repository>
-	<dependencies>
+    <screenshot small-thumbnail="https://raw.githubusercontent.com/reidellawfirm/docuseal-nc-app/v1.1.18/screenshots/01-request-signature-menu-small.png">https://raw.githubusercontent.com/reidellawfirm/docuseal-nc-app/v1.1.18/screenshots/01-request-signature-menu.png</screenshot>
+    <screenshot small-thumbnail="https://raw.githubusercontent.com/reidellawfirm/docuseal-nc-app/v1.1.18/screenshots/02-request-signature-dialog-small.png">https://raw.githubusercontent.com/reidellawfirm/docuseal-nc-app/v1.1.18/screenshots/02-request-signature-dialog.png</screenshot>
+    <dependencies>
 		<nextcloud min-version="34" max-version="35"/>
 		<php min-version="8.1"/>
 	</dependencies>
