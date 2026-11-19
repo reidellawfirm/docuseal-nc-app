@@ -14,6 +14,19 @@ namespace OCP\AppFramework\Db {
 		}
 		public function getId(): ?int { return $this->id; }
 		public function setId(int $id): void { $this->id = $id; }
+		public static function fromRow(array $row): static {
+			$instance = new static();
+			foreach ($row as $key => $value) {
+				$parts = explode('_', $key);
+				$property = array_shift($parts);
+				$property .= implode('', array_map('ucfirst', $parts));
+				if (!property_exists($instance, $property)) {
+					throw new \BadFunctionCallException($property . ' is not a valid attribute');
+				}
+				$instance->{'set' . ucfirst($property)}($value);
+			}
+			return $instance;
+		}
 	}
 }
 namespace OCP\Files {
@@ -217,6 +230,9 @@ namespace {
 	$assert(str_contains($mapperSource, 'function claimDelivery') && str_contains($mapperSource, 'function completeDelivery'), 'Mapper must provide atomic claim/completion operations');
 	$assert(str_contains($mapperSource, "isNull('signed_file_id')"), 'Delivery query must select undelivered requests');
 	$assert(is_file(dirname(__DIR__, 2) . '/lib/Migration/Version1016Date20261118110000.php'), 'Delivery-claim schema migration must exist');
+
+	$hydrated = \OCA\DocuSeal\Db\SignatureRequest::fromRow(['delivery_token' => 'claim-token', 'delivery_claimed_at' => 123]);
+	$assert($hydrated->getDeliveryToken() === 'claim-token' && $hydrated->getDeliveryClaimedAt() === 123, 'Database rows must hydrate delivery-claim entity attributes');
 
 	echo "PASS: $assertions hardened signed-document delivery assertions\n";
 }

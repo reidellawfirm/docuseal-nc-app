@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.17
+
+### Fixed
+- Declare `deliveryToken` and `deliveryClaimedAt` on `SignatureRequest` so
+  migrated database rows hydrate correctly. This fixes `deliveryToken is not
+  a valid attribute`, request-list failures, and embedded-signing lookup
+  errors after upgrading to 1.1.16.
+- Add an Entity-compatible hydration regression check for the delivery-claim
+  fields introduced by the 1.1.16 migration.
+
 ## 1.1.16
 
 ### Added

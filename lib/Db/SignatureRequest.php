@@ -40,6 +40,8 @@ class SignatureRequest extends Entity {
 	protected string $signType = 'direct'; // 'direct' or 'template'
 	protected string $status = 'pending'; // pending, sent, completed, declined, expired
 	protected ?int $signedFileId = null;
+	protected ?string $deliveryToken = null;
+	protected ?int $deliveryClaimedAt = null;
 	protected int $createdAt = 0;
 	protected int $updatedAt = 0;
 
@@ -53,6 +55,8 @@ class SignatureRequest extends Entity {
 		$this->addType('signType', 'string');
 		$this->addType('status', 'string');
 		$this->addType('signedFileId', 'integer');
+		$this->addType('deliveryToken', 'string');
+		$this->addType('deliveryClaimedAt', 'integer');
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 	}
