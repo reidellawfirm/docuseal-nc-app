@@ -156,6 +156,10 @@ class DocuSealController extends Controller {
 		$expireAt = $this->request->getParam('expireAt');
 		$builderTemplateId = $this->request->getParam('builderTemplateId');
 		$embedSign = $this->request->getParam('embedSign', false);
+		$recipientRoles = $this->request->getParam('recipientRoles', []);
+		$recipientRoles = is_array($recipientRoles) ? $recipientRoles : [];
+		$currentUserRole = $this->request->getParam('currentUserRole');
+		$currentUserRole = is_string($currentUserRole) ? $currentUserRole : null;
 
 		// If embed signing is requested, ensure current user is a signer
 		if ($embedSign) {
@@ -190,6 +194,7 @@ class DocuSealController extends Controller {
 
 			// Build submitters list
 			$submitters = $this->buildSubmittersList($targetEmails, $targetUserIds);
+			$this->markCurrentUserSubmitter($submitters);
 
 			if (empty($submitters)) {
 				return new DataResponse(['error' => 'No valid recipients found'], Http::STATUS_BAD_REQUEST);
@@ -198,14 +203,6 @@ class DocuSealController extends Controller {
 			// If builder provided a template, use it directly
 			if ($builderTemplateId !== null && (int)$builderTemplateId > 0) {
 				$templateId = (int)$builderTemplateId;
-				// Get template to assign submitter roles
-				$templateResult = $this->docuSealAPIService->getTemplate($templateId);
-				$templateRole = $templateResult['submitters'][0]['name'] ?? 'First Party';
-				foreach ($submitters as &$submitter) {
-					$submitter['role'] = $templateRole;
-				}
-				unset($submitter);
-
 				$result = $this->docuSealAPIService->createTemplateSubmission(
 					$templateId,
 					$submitters,
@@ -213,6 +210,8 @@ class DocuSealController extends Controller {
 					$subject,
 					$message,
 					$expireAt,
+					$recipientRoles,
+					$currentUserRole,
 				);
 			} else {
 				// Legacy: create template from file with hardcoded fields
@@ -224,6 +223,8 @@ class DocuSealController extends Controller {
 					$message,
 					$sendEmail,
 					$expireAt,
+					$recipientRoles,
+					$currentUserRole,
 				);
 			}
 
@@ -237,6 +238,8 @@ class DocuSealController extends Controller {
 				'requestId' => $signatureRequest->getId(),
 				'message' => 'Richiesta di firma inviata con successo',
 			]);
+		} catch (\InvalidArgumentException $e) {
+			return new DataResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Exception $e) {
 			$this->logger->error('Error creating direct signature request: ' . $e->getMessage(), [
 				'app' => Application::APP_ID,
@@ -260,6 +263,10 @@ class DocuSealController extends Controller {
 		$targetUserIds = $this->request->getParam('targetUserIds', []);
 		$sendEmail = $this->request->getParam('sendEmail', true);
 		$embedSign = $this->request->getParam('embedSign', false);
+		$recipientRoles = $this->request->getParam('recipientRoles', []);
+		$recipientRoles = is_array($recipientRoles) ? $recipientRoles : [];
+		$currentUserRole = $this->request->getParam('currentUserRole');
+		$currentUserRole = is_string($currentUserRole) ? $currentUserRole : null;
 		$subject = $this->request->getParam('subject');
 
 		// If embed signing is requested, ensure current user is a signer
@@ -281,6 +288,7 @@ class DocuSealController extends Controller {
 		try {
 			// Build submitters list
 			$submitters = $this->buildSubmittersList($targetEmails, $targetUserIds);
+			$this->markCurrentUserSubmitter($submitters);
 
 			if (empty($submitters)) {
 				return new DataResponse(['error' => 'No valid recipients found'], Http::STATUS_BAD_REQUEST);
@@ -293,6 +301,9 @@ class DocuSealController extends Controller {
 				$sendEmail,
 				$subject,
 				$message,
+				null,
+				$recipientRoles,
+				$currentUserRole,
 			);
 
 			// Get file info if fileId provided
@@ -322,6 +333,8 @@ class DocuSealController extends Controller {
 				'requestId' => $signatureRequest->getId(),
 				'message' => 'Richiesta di firma inviata con successo',
 			]);
+		} catch (\InvalidArgumentException $e) {
+			return new DataResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Exception $e) {
 			$this->logger->error('Error creating template signature request: ' . $e->getMessage(), [
 				'app' => Application::APP_ID,
@@ -594,37 +607,65 @@ class DocuSealController extends Controller {
 		}
 	}
 
+	/** Mark the current Nextcloud user for self-signing role assignment. */
+	private function markCurrentUserSubmitter(array &$submitters): void {
+		$currentEmail = $this->utilsService->getUserInfo($this->userId)['email'] ?? '';
+		foreach ($submitters as &$submitter) {
+			if (($submitter['nc_user_id'] ?? null) === $this->userId
+				|| ($currentEmail !== '' && strcasecmp($submitter['email'], $currentEmail) === 0)) {
+				$submitter['is_current_user'] = true;
+			}
+		}
+		unset($submitter);
+	}
+
 	/**
 	 * Build a list of submitters from email addresses and Nextcloud user IDs
 	 */
 	private function buildSubmittersList(array $targetEmails, array $targetUserIds): array {
 		$submitters = [];
-		$roleIndex = 1;
+		$seenEmails = [];
 
-		// Add Nextcloud users
+		// Add Nextcloud users first. If self-signing also supplied the same
+		// address as an external recipient, the user entry wins and is reused.
 		foreach ($targetUserIds as $uid) {
+			if (!is_string($uid) || $uid === '') {
+				continue;
+			}
 			$userInfo = $this->utilsService->getUserInfo($uid);
-			if ($userInfo !== null && !empty($userInfo['email'])) {
+			$email = trim((string)($userInfo['email'] ?? ''));
+			if ($userInfo !== null && $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				$emailKey = mb_strtolower($email);
+				if (isset($seenEmails[$emailKey])) {
+					continue;
+				}
+				$seenEmails[$emailKey] = true;
 				$submitters[] = [
-					'email' => $userInfo['email'],
-					'name' => $userInfo['name'],
-					'role' => 'First Party',
+					'email' => $email,
+					'name' => $userInfo['name'] ?? '',
 					'nc_user_id' => $uid,
 				];
 			}
 		}
 
-		// Add external email addresses
 		foreach ($targetEmails as $email) {
-			$email = trim($email);
-			if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-				$submitters[] = [
-					'email' => $email,
-					'name' => '',
-					'role' => 'First Party',
-					'nc_user_id' => null,
-				];
+			if (!is_string($email)) {
+				continue;
 			}
+			$email = trim($email);
+			if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				continue;
+			}
+			$emailKey = mb_strtolower($email);
+			if (isset($seenEmails[$emailKey])) {
+				continue;
+			}
+			$seenEmails[$emailKey] = true;
+			$submitters[] = [
+				'email' => $email,
+				'name' => '',
+				'nc_user_id' => null,
+			];
 		}
 
 		return $submitters;
@@ -680,9 +721,26 @@ class DocuSealController extends Controller {
 			$sub->setStatus('sent');
 			$sub->setCreatedAt($now);
 
-			// Match with API response to get DocuSeal submitter ID and embed URL
-			if (isset($apiSubmitters[$i])) {
-				$apiSub = $apiSubmitters[$i];
+			// Match by role/email because DocuSeal may return template party order.
+			$apiSub = null;
+			foreach ($apiSubmitters as $candidate) {
+				if (isset($candidate['role'], $submitterData['role'])
+					&& strcasecmp((string)$candidate['role'], (string)$submitterData['role']) === 0) {
+					$apiSub = $candidate;
+					break;
+				}
+			}
+			if ($apiSub === null) {
+				foreach ($apiSubmitters as $candidate) {
+					if (isset($candidate['email'])
+						&& strcasecmp((string)$candidate['email'], (string)$submitterData['email']) === 0) {
+						$apiSub = $candidate;
+						break;
+					}
+				}
+			}
+			$apiSub ??= $apiSubmitters[$i] ?? null;
+			if ($apiSub !== null) {
 				$sub->setDocusealSubmitterId($apiSub['id'] ?? null);
 				$sub->setEmbedSrc($apiSub['embed_src'] ?? null);
 				$sub->setStatus($apiSub['status'] ?? 'sent');

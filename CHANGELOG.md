@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.19
+
+### Fixed
+- Assign each recipient to a unique DocuSeal signing party instead of sending
+  every recipient as `First Party`, which caused HTTP 422 `role must be unique`
+  errors for multi-party requests.
+- Add recipient-to-party selectors for direct uploads, configured builders, and
+  existing DocuSeal templates, including explicit embedded self-signer mapping.
+- Validate recipient counts, duplicate recipients, unknown parties, and duplicate
+  party assignments before creating a submission.
+- Create additional parties and default fields for multi-recipient direct uploads.
+- Match returned DocuSeal submitters by role/email when saving signing URLs.
+
 ## 1.1.18
 - Nextcloud App Store listing refreshed.
 - Screenshots added for the Nextcloud App Store listing.

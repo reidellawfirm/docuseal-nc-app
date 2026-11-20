@@ -140,6 +140,16 @@ OC.L10N.register(
     "All signatures completed for \\\"%s\\\"" : "Alle Signaturen für \\\"%s\\\" abgeschlossen",
     "Signature request cancelled for \\\"%s\\\"" : "Signaturanforderung für \\\"%s\\\" abgebrochen",
     "%s declined to sign \\\"%s\\\"" : "%s hat die Signatur von \\\"%s\\\" abgelehnt",
-    "%s declined to sign \\\"%s\\\" - Reason: %s" : "%s hat die Signatur von \\\"%s\\\" abgelehnt - Grund: %s"
+    "%s declined to sign \\\"%s\\\" - Reason: %s" : "%s hat die Signatur von \\\"%s\\\" abgelehnt - Grund: %s",
+    "Assign each recipient to a different signing party. The party determines which fields they complete." : "Weisen Sie jedem Empfänger eine andere unterzeichnende Partei zu. Die Partei bestimmt, welche Felder ausgefüllt werden.",
+    "Assign each recipient to a different valid signing party before sending." : "Weisen Sie jedem Empfänger vor dem Senden eine andere gültige unterzeichnende Partei zu.",
+    "Could not load signing parties. Please reopen the field editor and try again." : "Die unterzeichnenden Parteien konnten nicht geladen werden. Öffnen Sie den Feldeditor erneut und versuchen Sie es noch einmal.",
+    "Nextcloud user: " : "Nextcloud-Benutzer: ",
+    "Select signing party" : "Unterzeichnende Partei auswählen",
+    "Signing party for " : "Unterzeichnende Partei für ",
+    "You (embedded signer)" : "Sie (eingebetteter Unterzeichner)",
+    "Your Nextcloud account email" : "E-Mail-Adresse Ihres Nextcloud-Kontos",
+    "Your signing party" : "Ihre unterzeichnende Partei",
+    "For external signers, type the full email address and select the email entry." : "Geben Sie für externe Unterzeichner die vollständige E-Mail-Adresse ein und wählen Sie den E-Mail-Eintrag aus."
 },
 "nplurals=2; plural=(n != 1);");

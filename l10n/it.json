@@ -141,7 +141,17 @@
         "All signatures completed for \"%s\"": "Tutte le firme completate per \"%s\"",
         "Signature request cancelled for \"%s\"": "Richiesta di firma annullata per \"%s\"",
         "%s declined to sign \"%s\"": "%s ha rifiutato di firmare \"%s\"",
-        "%s declined to sign \"%s\" - Reason: %s": "%s ha rifiutato di firmare \"%s\" - Motivo: %s"
+        "%s declined to sign \"%s\" - Reason: %s": "%s ha rifiutato di firmare \"%s\" - Motivo: %s",
+        "Assign each recipient to a different signing party. The party determines which fields they complete.": "Assegna ogni destinatario a una parte firmataria diversa. La parte determina quali campi deve compilare.",
+        "Assign each recipient to a different valid signing party before sending.": "Assegna ogni destinatario a una parte firmataria valida e diversa prima dell'invio.",
+        "Could not load signing parties. Please reopen the field editor and try again.": "Impossibile caricare le parti firmatarie. Riapri l'editor dei campi e riprova.",
+        "Nextcloud user: ": "Utente Nextcloud: ",
+        "Select signing party": "Seleziona parte firmataria",
+        "Signing party for ": "Parte firmataria per ",
+        "You (embedded signer)": "Tu (firmatario incorporato)",
+        "Your Nextcloud account email": "La tua email dell'account Nextcloud",
+        "Your signing party": "La tua parte firmataria",
+        "For external signers, type the full email address and select the email entry.": "Per i firmatari esterni, digita l'indirizzo email completo e seleziona la voce email."
     },
     "plurals": {}
 }

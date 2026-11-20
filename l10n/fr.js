@@ -140,6 +140,16 @@ OC.L10N.register(
     "All signatures completed for \\\"%s\\\"" : "Toutes les signatures sont terminées pour « %s »",
     "Signature request cancelled for \\\"%s\\\"" : "Demande de signature annulée pour « %s »",
     "%s declined to sign \\\"%s\\\"" : "%s a refusé de signer « %s »",
-    "%s declined to sign \\\"%s\\\" - Reason: %s" : "%s a refusé de signer « %s » - Motif : %s"
+    "%s declined to sign \\\"%s\\\" - Reason: %s" : "%s a refusé de signer « %s » - Motif : %s",
+    "Assign each recipient to a different signing party. The party determines which fields they complete." : "Attribuez chaque destinataire à une partie signataire différente. La partie détermine les champs à remplir.",
+    "Assign each recipient to a different valid signing party before sending." : "Attribuez chaque destinataire à une partie signataire valide et différente avant l'envoi.",
+    "Could not load signing parties. Please reopen the field editor and try again." : "Impossible de charger les parties signataires. Rouvrez l'éditeur de champs et réessayez.",
+    "Nextcloud user: " : "Utilisateur Nextcloud : ",
+    "Select signing party" : "Sélectionner la partie signataire",
+    "Signing party for " : "Partie signataire pour ",
+    "You (embedded signer)" : "Vous (signataire intégré)",
+    "Your Nextcloud account email" : "L'adresse e-mail de votre compte Nextcloud",
+    "Your signing party" : "Votre partie signataire",
+    "For external signers, type the full email address and select the email entry." : "Pour les signataires externes, saisissez l'adresse e-mail complète et sélectionnez l'entrée e-mail."
 },
 "nplurals=2; plural=(n > 1);");

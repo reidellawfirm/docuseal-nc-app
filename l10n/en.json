@@ -141,7 +141,17 @@
         "All signatures completed for \"%s\"": "All signatures completed for \"%s\"",
         "Signature request cancelled for \"%s\"": "Signature request cancelled for \"%s\"",
         "%s declined to sign \"%s\"": "%s declined to sign \"%s\"",
-        "%s declined to sign \"%s\" - Reason: %s": "%s declined to sign \"%s\" - Reason: %s"
+        "%s declined to sign \"%s\" - Reason: %s": "%s declined to sign \"%s\" - Reason: %s",
+        "Assign each recipient to a different signing party. The party determines which fields they complete.": "Assign each recipient to a different signing party. The party determines which fields they complete.",
+        "Assign each recipient to a different valid signing party before sending.": "Assign each recipient to a different valid signing party before sending.",
+        "Could not load signing parties. Please reopen the field editor and try again.": "Could not load signing parties. Please reopen the field editor and try again.",
+        "Nextcloud user: ": "Nextcloud user: ",
+        "Select signing party": "Select signing party",
+        "Signing party for ": "Signing party for ",
+        "You (embedded signer)": "You (embedded signer)",
+        "Your Nextcloud account email": "Your Nextcloud account email",
+        "Your signing party": "Your signing party",
+        "For external signers, type the full email address and select the email entry.": "For external signers, type the full email address and select the email entry."
     },
     "plurals": {}
 }

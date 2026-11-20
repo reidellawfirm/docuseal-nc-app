@@ -136,10 +136,49 @@
 				<!-- Recipients -->
 				<div class="recipients-section">
 					<label>{{ t('docuseal_nc_app', 'Destinatari') }}</label>
-					<MultiselectWho v-model="recipients" />
+					<MultiselectWho v-model="recipients" @update:model-value="onRecipientsChanged" />
 					<p class="hint">
 						{{ t('docuseal_nc_app', 'Cerca utenti Nextcloud o inserisci indirizzi email') }}
 					</p>
+					<p class="hint">
+						{{ t('docuseal_nc_app', 'For external signers, type the full email address and select the email entry.') }}
+					</p>
+
+					<div v-if="showPartyAssignments" class="party-assignments">
+						<p class="party-help">
+							{{ t('docuseal_nc_app', 'Assign each recipient to a different signing party. The party determines which fields they complete.') }}
+						</p>
+						<div v-if="showEmbedOption && !selfInRecipients" class="party-assignment-row self-party-row">
+							<div class="party-recipient">
+								<strong>{{ t('docuseal_nc_app', 'You (embedded signer)') }}</strong>
+								<small>{{ t('docuseal_nc_app', 'Your Nextcloud account email') }}</small>
+							</div>
+							<NcSelect
+								v-model="currentUserRole"
+								:options="partyNames"
+								:clearable="false"
+								:searchable="false"
+								:placeholder="t('docuseal_nc_app', 'Select signing party')"
+								:aria-label="t('docuseal_nc_app', 'Your signing party')" />
+						</div>
+						<div v-for="recipient in recipients" :key="recipientRoleKey(recipient)" class="party-assignment-row">
+							<div class="party-recipient">
+								<strong>{{ recipient.displayName }}</strong>
+								<small>{{ recipient.type === 'user' ? t('docuseal_nc_app', 'Nextcloud user: ') + recipient.id : recipient.email }}</small>
+							</div>
+							<NcSelect
+								:model-value="recipientRoles[recipientRoleKey(recipient)] || ''"
+								:options="partyNames"
+								:clearable="false"
+								:searchable="false"
+								:placeholder="t('docuseal_nc_app', 'Select signing party')"
+								:aria-label="t('docuseal_nc_app', 'Signing party for ') + recipient.displayName"
+								@update:model-value="setRecipientRole(recipient, $event)" />
+						</div>
+						<p v-if="roleValidationError" class="party-error">
+							{{ t('docuseal_nc_app', 'Assign each recipient to a different valid signing party before sending.') }}
+						</p>
+					</div>
 				</div>
 
 				<!-- Options -->
@@ -227,6 +266,12 @@ import { DocusealBuilder, DocusealForm } from '@docuseal/vue'
 import { generateUrl } from '@nextcloud/router'
 import { translate as t } from '../utils/translate'
 import { getDocuSealLanguage } from '../utils/language'
+import {
+	buildRecipientRoleAssignments,
+	createDefaultParties,
+	getCurrentUserId,
+	recipientRoleKey,
+} from '../utils/recipientRoles'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import MultiselectWho from './MultiselectWho.vue'
@@ -303,6 +348,10 @@ export default {
 			loadingTemplates: false,
 			// Recipients & options
 			recipients: [],
+			recipientRoles: {},
+			currentUserRole: '',
+			selfInRecipients: false,
+			roleValidationError: null,
 			sendEmail: true,
 			showEmbedOption: false,
 			customMessage: false,
@@ -328,7 +377,23 @@ export default {
 			if (this.signMode === 'template' && !this.selectedTemplate) {
 				return false
 			}
-			return true
+			return !this.roleValidationError
+		},
+		activeParties() {
+			if (this.signMode === 'template') {
+				return this.templateDetail?.submitters || []
+			}
+			if (this.configuredTemplateId) {
+				return this.templateDetail?.submitters || []
+			}
+			const count = this.recipients.length + (this.showEmbedOption && !this.selfInRecipients ? 1 : 0)
+			return createDefaultParties(count)
+		},
+		partyNames() {
+			return this.activeParties.map(party => party.name).filter(Boolean)
+		},
+		showPartyAssignments() {
+			return this.recipients.length > 0 || this.showEmbedOption
 		},
 		minExpiryDate() {
 			const now = new Date()
@@ -341,8 +406,45 @@ export default {
 		},
 	},
 
+	watch: {
+		recipients: {
+			handler() { this.syncRoleAssignments() },
+			deep: true,
+		},
+		showEmbedOption() { this.syncRoleAssignments() },
+		currentUserRole() { this.syncRoleAssignments() },
+		activeParties() { this.syncRoleAssignments() },
+	},
+
 	methods: {
 		t,
+		recipientRoleKey,
+		setRecipientRole(recipient, role) {
+			this.recipientRoles = {
+				...this.recipientRoles,
+				[recipientRoleKey(recipient)]: role || '',
+			}
+			this.syncRoleAssignments()
+		},
+		onRecipientsChanged(recipients) {
+			this.recipients = recipients || []
+		},
+		syncRoleAssignments() {
+			const result = buildRecipientRoleAssignments({
+				recipients: this.recipients,
+				parties: this.activeParties,
+				recipientRoles: this.recipientRoles,
+				currentUserRole: this.currentUserRole,
+				currentUserId: getCurrentUserId(),
+				embedSign: this.showEmbedOption,
+			})
+			this.recipientRoles = result.recipientRoles
+			this.selfInRecipients = result.selfInRecipients
+			this.roleValidationError = result.error
+			if (result.currentUserRole !== this.currentUserRole) {
+				this.currentUserRole = result.currentUserRole
+			}
+		},
 		close() {
 			this.show = false
 			this.$emit('close')
@@ -350,11 +452,17 @@ export default {
 
 		onModeChange(val) {
 			this.signMode = val
+			this.selectedTemplate = null
+			this.templateDetail = null
+			this.recipientRoles = {}
+			this.currentUserRole = ''
+			this.roleValidationError = null
 			// Reset builder state when switching modes
 			if (val !== 'direct') {
 				this.configuredTemplateId = null
 				this.builderToken = null
 			}
+			this.syncRoleAssignments()
 		},
 
 		// ======== BUILDER METHODS ========
@@ -388,13 +496,14 @@ export default {
 			this.loadingBuilder = false
 		},
 
-		onBuilderSave(data) {
+		async onBuilderSave(data) {
 			const templateId = data?.id || data?.template_id
 			if (!templateId) {
 				console.warn('Builder save event without template ID:', data)
 				return
 			}
 			this.configuredTemplateId = templateId
+			await this.loadTemplateParties(templateId)
 			this.step = 'ready'
 			showSuccess(t('docuseal_nc_app', 'Configurazione campi salvata!'))
 		},
@@ -421,24 +530,39 @@ export default {
 			this.loadingTemplates = false
 		},
 
-		async onTemplateSelected(template) {
-			if (!template) {
-				this.templateDetail = null
-				return
-			}
+		async loadTemplateParties(templateId) {
 			try {
-				const url = generateUrl('/apps/docuseal_nc_app/templates/{templateId}', { templateId: template.id })
+				const url = generateUrl('/apps/docuseal_nc_app/templates/{templateId}', { templateId })
 				const response = await axios.get(url)
 				this.templateDetail = response.data
-				this.showPreview = true
 			} catch (e) {
-				console.error('Error loading template detail:', e)
+				this.templateDetail = null
+				this.roleValidationError = 'parties_unavailable'
+				showError(t('docuseal_nc_app', 'Could not load signing parties. Please reopen the field editor and try again.'))
+				console.error('Error loading signing parties:', e)
 			}
+		},
+
+		async onTemplateSelected(template) {
+			this.recipientRoles = {}
+			this.currentUserRole = ''
+			if (!template) {
+				this.templateDetail = null
+				this.syncRoleAssignments()
+				return
+			}
+			await this.loadTemplateParties(template.id)
+			if (this.templateDetail) this.showPreview = true
 		},
 
 		// ======== SUBMIT ========
 
 		async requestSignature() {
+			this.syncRoleAssignments()
+			if (this.roleValidationError) {
+				showError(t('docuseal_nc_app', 'Assign each recipient to a different valid signing party before sending.'))
+				return
+			}
 			this.submitting = true
 			try {
 				const targetUserIds = []
@@ -461,6 +585,8 @@ export default {
 						targetEmails,
 						sendEmail: this.sendEmail,
 						embedSign: this.showEmbedOption,
+						recipientRoles: this.recipientRoles,
+						currentUserRole: this.showEmbedOption ? this.currentUserRole : null,
 					}
 					if (this.configuredTemplateId) {
 						params.builderTemplateId = this.configuredTemplateId
@@ -474,6 +600,8 @@ export default {
 						targetEmails,
 						sendEmail: this.sendEmail,
 						embedSign: this.showEmbedOption,
+						recipientRoles: this.recipientRoles,
+						currentUserRole: this.showEmbedOption ? this.currentUserRole : null,
 					}
 				}
 
@@ -741,6 +869,64 @@ h2 {
 	display: block;
 	font-weight: bold;
 	margin-bottom: 4px;
+}
+
+.party-assignments {
+	margin-top: 12px;
+	padding: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.party-error {
+	margin: 10px 0 0;
+	color: var(--color-error);
+	font-size: 0.9em;
+}
+
+.party-help {
+	margin: 0 0 12px;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
+
+.party-assignment-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr);
+	gap: 12px;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.party-assignment-row:last-child {
+	margin-bottom: 0;
+}
+
+.party-recipient {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.party-recipient strong,
+.party-recipient small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.party-recipient small {
+	color: var(--color-text-maxcontrast);
+}
+
+.self-party-row {
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+@media (max-width: 600px) {
+	.party-assignment-row {
+		grid-template-columns: 1fr;
+	}
 }
 
 .hint {

@@ -172,6 +172,142 @@ class DocuSealAPIService {
 	}
 
 	/**
+	 * Assign each recipient to a unique party defined by the selected template.
+	 * Explicit mappings are keyed as user:<uid> or email:<lowercase-address>.
+	 */
+	public function assignSubmitterRoles(
+		array $submitters,
+		array $template,
+		array $recipientRoles = [],
+		?string $currentUserRole = null,
+	): array {
+		$parties = array_values($template['submitters'] ?? []);
+		if (count($parties) === 0) {
+			throw new \InvalidArgumentException('The selected DocuSeal template has no signing parties configured.');
+		}
+		if (count($submitters) > count($parties)) {
+			throw new \InvalidArgumentException(
+				'This template supports ' . count($parties) . ' signing parties, but '
+				. count($submitters) . ' recipients were selected. Add another signing party in DocuSeal or remove recipients.'
+			);
+		}
+
+		$roleMap = [];
+		foreach ($parties as $party) {
+			$name = trim((string)($party['name'] ?? ''));
+			if ($name === '') {
+				throw new \InvalidArgumentException('Every DocuSeal signing party must have a name.');
+			}
+			$lookup = mb_strtolower($name);
+			if (isset($roleMap[$lookup])) {
+				throw new \InvalidArgumentException('The selected DocuSeal template has duplicate signing party names.');
+			}
+			$roleMap[$lookup] = $name;
+		}
+
+		// Reserve explicit choices first so an automatic fallback cannot steal
+		// a party that the user assigned to a later recipient.
+		$assigned = [];
+		$used = [];
+		foreach ($submitters as $index => $submitter) {
+			$key = $this->recipientRoleKey($submitter);
+			$emailKey = 'email:' . mb_strtolower(trim((string)($submitter['email'] ?? '')));
+			$role = null;
+			if (array_key_exists($key, $recipientRoles)) {
+				$role = $recipientRoles[$key];
+			} elseif (array_key_exists($emailKey, $recipientRoles)) {
+				$role = $recipientRoles[$emailKey];
+			}
+			if (!empty($submitter['is_current_user']) && $currentUserRole !== null && trim($currentUserRole) !== '') {
+				$role = $currentUserRole;
+			}
+			if ($role !== null && !is_scalar($role)) {
+				throw new \InvalidArgumentException('Signing party assignments must be text values.');
+			}
+			$role = trim((string)$role);
+			if ($role === '') {
+				$assigned[$index] = null;
+				continue;
+			}
+			$lookup = mb_strtolower($role);
+			if (!isset($roleMap[$lookup])) {
+				throw new \InvalidArgumentException(
+					'Unknown signing party "' . $role . '". Choose a party defined in the selected DocuSeal template.'
+				);
+			}
+			if (isset($used[$lookup])) {
+				throw new \InvalidArgumentException(
+					'Each recipient must have a different signing party. "' . $roleMap[$lookup] . '" is assigned more than once.'
+				);
+			}
+			$used[$lookup] = true;
+			$assigned[$index] = $roleMap[$lookup];
+		}
+
+		foreach ($submitters as $index => &$submitter) {
+			if ($assigned[$index] === null) {
+				$assigned[$index] = $this->firstUnusedParty($parties, $used);
+				if ($assigned[$index] === null) {
+					throw new \InvalidArgumentException('There are not enough unique signing parties for the selected recipients.');
+				}
+				$used[mb_strtolower($assigned[$index])] = true;
+			}
+			$submitter['role'] = $assigned[$index];
+		}
+		unset($submitter);
+
+		return $submitters;
+	}
+
+	private function firstUnusedParty(array $parties, array $used): ?string {
+		foreach ($parties as $party) {
+			$name = trim((string)($party['name'] ?? ''));
+			if ($name !== '' && !isset($used[mb_strtolower($name)])) {
+				return $name;
+			}
+		}
+		return null;
+	}
+
+	private function recipientRoleKey(array $submitter): string {
+		if (!empty($submitter['nc_user_id'])) {
+			return 'user:' . $submitter['nc_user_id'];
+		}
+		return 'email:' . mb_strtolower(trim((string)($submitter['email'] ?? '')));
+	}
+
+	/** Ensure a newly uploaded direct document has enough DocuSeal parties. */
+	private function ensureTemplateParties(int $templateId, array $templateResult, int $requiredCount): array {
+		$parties = array_values($templateResult['submitters'] ?? []);
+		$originalCount = count($parties);
+		for ($i = $originalCount; $i < $requiredCount; $i++) {
+			$parties[] = [
+				'name' => $this->ordinalPartyName($i + 1),
+				'uuid' => $this->generateUuid(),
+			];
+		}
+		if (count($parties) !== $originalCount) {
+			$this->request('PUT', '/templates/' . $templateId, ['submitters' => $parties]);
+		}
+		return $parties;
+	}
+
+	private function ordinalPartyName(int $number): string {
+		$names = [
+			1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Fifth',
+			6 => 'Sixth', 7 => 'Seventh', 8 => 'Eighth', 9 => 'Ninth', 10 => 'Tenth',
+		];
+		return ($names[$number] ?? $number . 'th') . ' Party';
+	}
+
+	private function generateUuid(): string {
+		$data = random_bytes(16);
+		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+	}
+
+	/**
 	 * Upload a file directly and create a submission
 	 *
 	 * DocuSeal workflow: 1) Create template from file via /templates/pdf
@@ -180,11 +316,13 @@ class DocuSealAPIService {
 	public function createDirectSubmission(
 		string $fileContent,
 		string $fileName,
-		array $submitters,
+		array &$submitters,
 		?string $subject = null,
 		?string $message = null,
 		bool $sendEmail = true,
 		?string $expireAt = null,
+		array $recipientRoles = [],
+		?string $currentUserRole = null,
 	): array {
 		// Step 1: Create a template from the uploaded file
 		$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
@@ -230,65 +368,69 @@ class DocuSealAPIService {
 			'app' => Application::APP_ID,
 		]);
 
-		// Add default signature field if template has no fields
-		if (empty($templateResult['fields'])) {
-			$submitterUuid = $templateResult['submitters'][0]['uuid'] ?? null;
-			$documentAttachmentUuid = $templateResult['schema'][0]['attachment_uuid'] ?? null;
+		// Direct uploads start with one DocuSeal party. Add parties before
+		// creating fields so every recipient has a valid submitter UUID.
+		$templateResult['submitters'] = $this->ensureTemplateParties(
+			$templateId,
+			$templateResult,
+			count($submitters),
+		);
 
-			$fields = [
-				[
+		// Add default signature/date fields only for the legacy direct flow.
+		// Builder-configured templates already contain their own fields.
+		if (empty($templateResult['fields'])) {
+			$documentAttachmentUuid = $templateResult['schema'][0]['attachment_uuid'] ?? null;
+			$fields = [];
+			foreach ($templateResult['submitters'] as $index => $party) {
+				$submitterUuid = $party['uuid'] ?? null;
+				if ($submitterUuid === null) {
+					continue;
+				}
+				$y = max(0.08, 0.85 - ($index * 0.12));
+				$fields[] = [
 					'name' => $this->l10n->t('Signature'),
 					'type' => 'signature',
 					'required' => true,
+					'submitter_uuid' => $submitterUuid,
 					'areas' => [[
 						'x' => 0.1,
-						'y' => 0.85,
+						'y' => $y,
 						'w' => 0.35,
 						'h' => 0.06,
 						'page' => 0,
+						'attachment_uuid' => $documentAttachmentUuid,
 					]],
-				],
-				[
+				];
+				$fields[] = [
 					'name' => $this->l10n->t('Date'),
 					'type' => 'date',
 					'required' => true,
+					'submitter_uuid' => $submitterUuid,
 					'areas' => [[
 						'x' => 0.55,
-						'y' => 0.85,
+						'y' => $y,
 						'w' => 0.2,
 						'h' => 0.04,
 						'page' => 0,
+						'attachment_uuid' => $documentAttachmentUuid,
 					]],
-				],
-			];
-
-			// Assign submitter UUID if available
-			if ($submitterUuid !== null) {
-				foreach ($fields as &$field) {
-					$field['submitter_uuid'] = $submitterUuid;
-					if ($documentAttachmentUuid !== null) {
-						foreach ($field['areas'] as &$area) {
-							$area['attachment_uuid'] = $documentAttachmentUuid;
-						}
-						unset($area);
+				];
+			}
+			foreach ($fields as &$field) {
+				foreach ($field['areas'] as &$area) {
+					if (($area['attachment_uuid'] ?? null) === null) {
+						unset($area['attachment_uuid']);
 					}
 				}
-				unset($field);
+				unset($area);
 			}
-
-			$this->request('PUT', '/templates/' . $templateId, [
-				'fields' => $fields,
-			]);
+			unset($field);
+			if (!empty($fields)) {
+				$this->request('PUT', '/templates/' . $templateId, ['fields' => $fields]);
+			}
 		}
 
-		// Step 2: Create submission from the template
-		// Map submitter roles to the template's first submitter role
-		$templateRole = $templateResult['submitters'][0]['name'] ?? 'First Party';
-		foreach ($submitters as &$submitter) {
-			$submitter['role'] = $templateRole;
-		}
-		unset($submitter);
-
+		// Step 2: Create submission from the template.
 		return $this->createTemplateSubmission(
 			$templateId,
 			$submitters,
@@ -296,6 +438,8 @@ class DocuSealAPIService {
 			$subject,
 			$message,
 			$expireAt,
+			$recipientRoles,
+			$currentUserRole,
 		);
 	}
 
@@ -304,16 +448,27 @@ class DocuSealAPIService {
 	 */
 	public function createTemplateSubmission(
 		int $templateId,
-		array $submitters,
+		array &$submitters,
 		bool $sendEmail = true,
 		?string $subject = null,
 		?string $message = null,
 		?string $expireAt = null,
+		array $recipientRoles = [],
+		?string $currentUserRole = null,
 	): array {
+		$template = $this->getTemplate($templateId);
+		$submitters = $this->assignSubmitterRoles($submitters, $template, $recipientRoles, $currentUserRole);
+
+		$apiSubmitters = $submitters;
+		foreach ($apiSubmitters as &$apiSubmitter) {
+			unset($apiSubmitter['nc_user_id'], $apiSubmitter['is_current_user']);
+		}
+		unset($apiSubmitter);
+
 		$params = [
 			'template_id' => $templateId,
 			'send_email' => $sendEmail,
-			'submitters' => $submitters,
+			'submitters' => $apiSubmitters,
 		];
 
 		if ($subject !== null || $message !== null) {
